@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>校历与课程日历</title>
+<style>
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+       max-width: 720px; margin: 40px auto; padding: 0 16px; color: #222; line-height: 1.7; }
+h1 { font-size: 1.6em; }
+.url { background: #f4f4f5; border: 1px solid #ddd; border-radius: 8px;
+        padding: 12px 14px; font-family: ui-monospace, Consolas, monospace;
+        word-break: break-all; font-size: 0.95em; }
+a { color: #0969da; }
+h2 { font-size: 1.2em; margin-top: 32px; }
+ol { padding-left: 22px; }
+</style>
+</head>
+<body>
+<h1>校历与课程日历</h1>
+<p>中国科学技术大学本科教学日历 + 个人课程表，已合并为一个可订阅的 iCal 日历，约每天自动同步。</p>
+<p class="url">https://&lt;你的GitHub用户名&gt;.github.io/Calendar/calendar.ics</p>
+
+<h2>Google 日历</h2>
+<ol>
+<li>打开 Google 日历网页版</li>
+<li>左侧“其他日历”旁点 <b>+</b>，选择“从网址添加”</li>
+<li>粘贴上面的订阅地址，点击“添加日历”</li>
+</ol>
+
+<h2>Apple 日历 (iPhone / Mac)</h2>
+<ol>
+<li>点击 <a href="webcal://&lt;你的GitHub用户名&gt;.github.io/Calendar/calendar.ics">此处订阅</a>（或手动添加：文件 → 新建日历订阅）</li>
+<li>粘贴地址：<span class="url" style="padding:2px 6px;">webcal://&lt;你的GitHub用户名&gt;.github.io/Calendar/calendar.ics</span></li>
+<li>按需调整同步频率，点击“订阅”</li>
+</ol>
+
+<h2>Outlook</h2>
+<ol>
+<li>Outlook 中：文件 → 账户设置 → 账户设置</li>
+<li>选择“Internet 日历”选项卡 → 新建</li>
+<li>粘贴订阅地址 → 添加</li>
+</ol>
+
+<h2>更新日历</h2>
+<ol>
+<li>编辑 <code>2026秋季课程/2026.md</code> 增加或修改课程</li>
+<li>本地运行 <code>python build_calendar.py</code> 重新生成</li>
+<li>提交并推送到 GitHub，Pages 会自动重新部署（也可手动触发 Actions）</li>
+</ol>
+</body>
+</html>
