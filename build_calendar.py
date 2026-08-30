@@ -54,6 +54,21 @@ PERIOD_TIMES: dict[int, tuple[time, time]] = {
 
 WEEKDAY_NAMES = ["", "周一", "周二", "周三", "周四", "周五", "周六", "周日"]
 
+# 自定义每周固定事件（如组会、例会），按秋季学期教学周展开：
+#   summary  事件名称
+#   weekday  星期几, 1=周一 ... 7=周日
+#   start/end  开始/结束时间 "HH:MM"
+#   weeks    起止周, 格式与课程表相同 (如 "1~20")
+RECURRING_EVENTS = [
+    {
+        "summary": "组会",
+        "weekday": 1,
+        "start": "19:00",
+        "end": "21:00",
+        "weeks": "1~20",
+    },
+]
+
 
 def ics_escape(text: str) -> str:
     """转义 ICS 文本中的特殊字符。"""
@@ -245,6 +260,40 @@ def build_course_events(events: list[dict], holidays: set[date], week1_start: da
     return lines, warnings
 
 
+def build_recurring_events(holidays: set[date], week1_start: date) -> tuple[list[str], list[str]]:
+    """按配置生成每周固定事件（如组会），法定假日自动跳过。"""
+    lines: list[str] = []
+    warnings: list[str] = []
+    for item in RECURRING_EVENTS:
+        summary = item["summary"]
+        weekday = int(item["weekday"])
+        start_t = time.fromisoformat(item["start"])
+        end_t = time.fromisoformat(item["end"])
+        for week in parse_weeks(str(item["weeks"])):
+            day = week1_start + timedelta(days=(week - 1) * 7 + weekday)
+            if day in holidays:
+                continue
+            start = datetime.combine(day, start_t)
+            end = datetime.combine(day, end_t)
+            seed = f"{summary}|{week}|{day.isoformat()}"
+            uid = hashlib.md5(seed.encode("utf-8")).hexdigest()[:16]
+            lines.extend(
+                [
+                    "BEGIN:VEVENT",
+                    f"UID:meeting-{uid}@ustc-calendar",
+                    f"DTSTAMP:{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}",
+                    f"DTSTART;TZID=Asia/Shanghai:{start.strftime('%Y%m%dT%H%M%S')}",
+                    f"DTEND;TZID=Asia/Shanghai:{end.strftime('%Y%m%dT%H%M%S')}",
+                    f"SUMMARY:{ics_escape(summary)}",
+                    f"DESCRIPTION:{ics_escape(f'第{week}周 {WEEKDAY_NAMES[weekday]}')}",
+                    "STATUS:CONFIRMED",
+                    "TRANSP:OPAQUE",
+                    "END:VEVENT",
+                ]
+            )
+    return lines, warnings
+
+
 def detect_calendar_url() -> str:
     """从 git remote 推断 Pages 订阅地址, 失败则给出占位符。"""
     try:
@@ -333,6 +382,8 @@ def main() -> int:
     week1_start = find_fall_week1_start(kept)
     holidays = collect_holidays(kept)
     course_lines, warnings = build_course_events(kept, holidays, week1_start)
+    meeting_lines, meeting_warnings = build_recurring_events(holidays, week1_start)
+    warnings.extend(meeting_warnings)
 
     now = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     body = [f"PRODID:-//USTC Calendar//校历与课程//CN", "VERSION:2.0", "CALSCALE:GREGORIAN",
@@ -354,6 +405,7 @@ def main() -> int:
     for ev in kept:
         body.extend(ev["lines"])
     body.extend(course_lines)
+    body.extend(meeting_lines)
     ics_text = "BEGIN:VCALENDAR\r\n" + fold_ics("\n".join(body)) + "END:VCALENDAR\r\n"
 
     out_ics = ROOT / "calendar.ics"
@@ -363,11 +415,13 @@ def main() -> int:
     (ROOT / "index.html").write_text(render_index(calendar_url), encoding="utf-8")
 
     course_count = sum(1 for line in course_lines if line == "BEGIN:VEVENT")
+    meeting_count = sum(1 for line in meeting_lines if line == "BEGIN:VEVENT")
     first_course = min((parse_date(ev["props"]["DTSTART"]) for ev in kept), default=None)
     last_course = max((parse_date(ev["props"]["DTSTART"]) for ev in kept), default=None)
     print(f"校历事件: {len(kept)} 个 (原 {len(all_events)} 个, 截取 {CUTOFF} 之后)")
     print(f"校历日期范围: {first_course} ~ {last_course}")
     print(f"课程事件: {course_count} 个")
+    print(f"固定事件(组会等): {meeting_count} 个")
     print(f"已生成: {out_ics}")
     print(f"已生成: {ROOT / 'index.html'}")
     if calendar_url.startswith("https://<"):

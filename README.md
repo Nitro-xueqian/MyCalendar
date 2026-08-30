@@ -57,6 +57,22 @@ python build_calendar.py
 
 然后提交推送即可，Actions 会自动重建并部署。
 
+## 每周固定事件（如组会）
+
+在 `build_calendar.py` 顶部的 `RECURRING_EVENTS` 配置中添加，按秋季学期教学周自动展开，法定假日自动跳过：
+
+```python
+RECURRING_EVENTS = [
+    {
+        "summary": "组会",
+        "weekday": 1,      # 1=周一 ... 7=周日
+        "start": "19:00",
+        "end": "21:00",
+        "weeks": "1~20",   # 秋季学期教学周
+    },
+]
+```
+
 ## 更新校历
 
 把新的校历导出文件（ICS 格式）覆盖到 `校历/basic.ics`，重新运行脚本。生成时只保留 **2025-09-01 及之后** 的事件，更早的校历事件会被丢弃。
